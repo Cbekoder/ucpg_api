@@ -1,0 +1,7 @@
+djangorestframework
+drf-yasg
+python-environ
+django-jazzmin
+django-cors-headers
+djangorestframework-simplejwt
+django-filter
