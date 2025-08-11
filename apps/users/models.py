@@ -14,8 +14,8 @@ class User(AbstractUser, BaseModel):
     bio = models.TextField(blank=True, null=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
+    # USERNAME_FIELD = 'email'
+    # REQUIRED_FIELDS = ['username']
 
     def __str__(self):
         return f"{self.username} ({self.role})"

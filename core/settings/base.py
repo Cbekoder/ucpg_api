@@ -51,12 +51,19 @@ DJANGO_APPS = [
 CUSTOM_APPS = [
     'apps.common',
     'apps.users',
+    'apps.payments',
+    'apps.providers',
 ]
 
 THIRD_PARTY_APPS = [
     'rest_framework',
     'drf_yasg',
     'corsheaders',
+    'django_filters',
+    'rest_framework_simplejwt',
+    'django_celery_beat',
+    'django_celery_results',
+    'django_extensions',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + CUSTOM_APPS + THIRD_PARTY_APPS
@@ -88,6 +95,8 @@ SWAGGER_SETTINGS = {
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'core.middleware.security.MaintenanceModeMiddleware',
+    'core.middleware.security.SecurityHeadersMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -95,6 +104,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'core.middleware.security.RateLimitMiddleware',
+    'core.middleware.security.APIKeyValidationMiddleware',
+    'core.middleware.security.RequestLoggingMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -117,6 +129,30 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
+# Database
+# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env.str('DB_NAME', 'ucpg_db'),
+        'USER': env.str('DB_USER', 'postgres'),
+        'PASSWORD': env.str('DB_PASSWORD', 'postgres'),
+        'HOST': env.str('DB_HOST', 'localhost'),
+        'PORT': env.str('DB_PORT', '5432'),
+    }
+}
+
+# Redis Configuration
+REDIS_URL = env.str('REDIS_URL', 'redis://localhost:6379/0')
+
+# Cache Configuration
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': REDIS_URL,
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -164,3 +200,62 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'users.User'
+
+
+# Celery Configuration
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+
+# UCPG Specific Settings
+UCPG_SETTINGS = {
+    # Commission Settings
+    'DEFAULT_COMMISSION_RATE': env.float('DEFAULT_COMMISSION_RATE', 0.05),  # 5%
+    'MAX_COMMISSION_RATE': env.float('MAX_COMMISSION_RATE', 0.20),  # 20%
+    
+    # Promo Link Settings
+    'PROMO_LINK_EXPIRY_HOURS': env.int('PROMO_LINK_EXPIRY_HOURS', 24),
+    'PROMO_CODE_LENGTH': env.int('PROMO_CODE_LENGTH', 12),
+    
+    # Transaction Settings
+    'MIN_TRANSACTION_AMOUNT': env.float('MIN_TRANSACTION_AMOUNT', 1.0),
+    'MAX_TRANSACTION_AMOUNT': env.float('MAX_TRANSACTION_AMOUNT', 10000.0),
+    
+    # Exchange Rate Settings
+    'EXCHANGE_RATE_UPDATE_INTERVAL': env.int('EXCHANGE_RATE_UPDATE_INTERVAL', 300),  # 5 minutes
+    'EXCHANGE_RATE_CACHE_TIMEOUT': env.int('EXCHANGE_RATE_CACHE_TIMEOUT', 600),  # 10 minutes
+}
+
+# Payment Gateway Settings
+STRIPE_PUBLISHABLE_KEY = env.str('STRIPE_PUBLISHABLE_KEY', '')
+STRIPE_SECRET_KEY = env.str('STRIPE_SECRET_KEY', '')
+STRIPE_WEBHOOK_SECRET = env.str('STRIPE_WEBHOOK_SECRET', '')
+
+# Cryptocurrency Settings
+BTC_NODE_URL = env.str('BTC_NODE_URL', '')
+ETH_NODE_URL = env.str('ETH_NODE_URL', 'https://mainnet.infura.io/v3/your-project-id')
+USDT_CONTRACT_ADDRESS = env.str('USDT_CONTRACT_ADDRESS', '0xdAC17F958D2ee523a2206206994597C13D831ec7')
+MASTER_WALLET_ADDRESS = env.str('MASTER_WALLET_ADDRESS', '')
+MASTER_WALLET_PRIVATE_KEY = env.str('MASTER_WALLET_PRIVATE_KEY', '')
+
+# Exchange Rate API Settings
+BINANCE_API_URL = 'https://api.binance.com/api/v3'
+COINGECKO_API_URL = 'https://api.coingecko.com/api/v3'
+COINGECKO_API_KEY = env.str('COINGECKO_API_KEY', '')
+
+# Security Settings
+ENCRYPTION_KEY = env.str('ENCRYPTION_KEY', '')
+JWT_EXPIRY_HOURS = env.int('JWT_EXPIRY_HOURS', 24)
+
+# CORS Settings for API access
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # React development server
+    "http://127.0.0.1:3000",
+]
+
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only in development

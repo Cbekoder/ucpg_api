@@ -9,7 +9,9 @@ from core.swagger.schema import swagger_urlpatterns
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', lambda request: HttpResponseRedirect('/docs/')),
-    path('api/v1/users/', include("apps.users.urls"))
+    path('api/v1/users/', include("apps.users.urls")),
+    path('api/v1/', include("apps.payments.urls")),
+    path('api/v1/providers/', include("apps.providers.urls")),
 ]
 
 urlpatterns += swagger_urlpatterns
